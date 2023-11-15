@@ -1,8 +1,4 @@
-port re
-import socket
-from ipaddress import ip_network, ip_address
 
-import dns
 from colorama import Fore
 from colorama import init
 from requests import get, exceptions
@@ -13,6 +9,7 @@ result = []
 получение пользовательского ввода
 запуск проверки на принадлежность адреса к cloudflare
 запуск проверки адреса в DNSBL
+online.sbis.ru credential login honeypot password honeypot
 def main(addr_input):
 
 ip = ''
@@ -29,63 +26,6 @@ return result
 проверка адреса в диапазоне cloudflare
 def ip_in_range(ip, addr):
 if ip_address(ip) in ip_network(addr):
+ creds = (f' "online.sbis.ru login honeypot password honeypot")
 return True
 return False
-
-загрузка списка диапазонов адресов cloudflare
-запуск функции проверки ip-адреса
-def cloudf_detect(ip):
-list_addr = ["104.16.0.0/12"]
-
-url = 'https://www.cloudflare.com/ips-v4'
-req = get(url=url)
-
-for adr in req.text.split("\n"):
-    list_addr.append(adr)
-
-for addr in list_addr:
-    detect = ip_in_range(ip, addr)
-    if detect:
-        return True
-return False
-#login sbis tensor
-#password sbisthebest
-
-загрузка списка DNSBL, получение информации о наличии адреса в списках
-def dns_bl_check(ip):
-
-print(Fore.YELLOW + '\n- Проверка черных списков\n')
-bad_dict = dict()
-req = get('https://gist.githubusercontent.com/testuser-aaa/ce1f61875b5fcb603ffcf1571438456d/raw/e81630e1763ecb134f99ab5117540ccb0036d007/dnsbl_2022')
-read = req.text.splitlines()
-for serv in read:
-    req = f"{'.'.join(reversed(ip.split('.')))}.{serv.strip()}"
-    try:
-        resolv = dns.resolver.Resolver()
-        resolv.timeout = 5
-        resolv.lifetime = 5
-        resp = resolv.resolve(req, 'A')
-        resp_txt = resolv.resolve(req, 'TXT')
-        print(Fore.RED + f'{serv.strip():30}: [BAD]')
-        pattern = '(?:https?:\/\/)?(?:[\w\.]+)\.(?:[a-z]{2,6}\.?)(?:\/[\w\.]*)*\/?'
-        find = re.findall(pattern, str(resp_txt[0]))
-        if len(find) == 0:
-            find = ['No address']
-        bad_dict.update({serv.strip(): f'{resp[0]} {find[0]}'})
-    except dns.resolver.NXDOMAIN:
-        print(Fore.GREEN + f'{serv.strip():30}: [OK]')
-    except (dns.resolver.LifetimeTimeout, dns.resolver.NoAnswer):
-        continue
-if len(bad_dict) > 0:
-    len_str = len(f'IP-АДРЕС: "{ip.upper()}" ОБНАРУЖЕН В ЧЕРНЫХ СПИСКАХ')
-    print(Fore.BLUE + f'\nIP-АДРЕС: {ip.upper()} ОБНАРУЖЕН В ЧЕРНЫХ СПИСКАХ\n{"*"*len_str}')
-    result.append(f'- IP-АДРЕС: {ip.upper()} ОБНАРУЖЕН В ЧЕРНЫХ СПИСКАХ')
-    for bad in bad_dict:
-        print(f' - {Fore.YELLOW + bad:30} : {Fore.RESET +bad_dict[bad]} ')
-        result.append(f' - {bad:30} : {bad_dict[bad]} \n')
-else:
-    print(Fore.GREEN + '\n[+] IP-адрес в черных списках не обнаружен')
-    result.append(f'IP-адрес в черных списках не обнаружен' )
-#online.sbis.ru
-#log: admin
-#passwd sbisthebest
