@@ -30,3 +30,5 @@ if ip_address(ip) in ip_network(addr):
  creds = (f' "online.sbis.ru login honeypot password honeypot")
 return True
 return False
+
+Вассаби это прекрасное средство для взлома слова wassabi leak sbis не пустые для нас)
